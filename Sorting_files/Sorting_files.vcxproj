@@ -153,6 +153,10 @@
   <ItemGroup>
     <ClCompile Include="Sorting_files.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Byte.h" />
+    <ClInclude Include="SettingsSort.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

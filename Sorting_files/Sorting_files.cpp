@@ -1,135 +1,148 @@
 ﻿#include <iostream>
-#include <string>
 #include <filesystem>
-#include <vector>
-#include <fstream>
+#include <Windows.h>
+
+#include "Byte.h"
+#include "SettingsSort.h"
 
 namespace fs = std::experimental::filesystem;
-
-struct Types
-{
-	std::string type;
-	std::string nameType;
-	Types(std::string type, std::string nameType) : type(type), nameType(nameType) {};
-};
-
-std::string cutString(std::string a, short b, short c) { //a[b:c)
-	std::string d = "";
-	for (int i = b; i < c; i++) {
-		d += a[i];
-	}
-	return d;
+void setColor(int text, int bg) {
+	HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleTextAttribute(hStdOut, (WORD)((bg << 4) | text));
 }
 
-bool reader(std::string adress, std::vector<Types> &types, std::vector<std::string> &typeNames) {
-	bool status = false;
-	std::string line;
-	std::ifstream fin;
-	fin.open(adress);
-	if (fin.is_open()) {//if the file is open
-		status = true;
-		std::cout << 1 << std::endl;
-		while (std::getline(fin, line)) {
-			if (line != "") {
-				short tempI = line.find(':');
-				std::string nameType = cutString(line, 0, tempI);
-				typeNames.push_back(nameType);
-				line = cutString(line, ++tempI, line.length());
-				tempI = 0;
-				short len = line.length();
-				for (int i = 0; i < len; i++)
-				{
-					if (line[i] == ',' || i + 1 == len) {
-						if (i + 1 == len) i++;
-						std::string tempS = cutString(line, tempI, i);
-						if (tempS[0] == ' ') tempS.erase(0, 1);
-						if (tempS[tempS.length() - 1] == ' ') tempS.erase(tempS.length() - 1, 1);
-						types.push_back(Types('.' + tempS, nameType));
-						tempI = i + 1;
-					}
-				}				
-			}
-		}
-	}
-	fin.close(); // закрываем файл
-	return status;
+void message(std::string mes1, std::string mes2) {
+	setColor(14, 0);
+	std::cout << mes1;
+	setColor(11, 0);
+	//mes2.resize(10, ' ');
+	std::cout << mes2 << std::endl;
 }
 
-std::string typeFind(std::vector<Types> &types, std::string temp) {
-	std::string type = "";
-	for (int i = 0; i < types.size(); i++)
-	{
-		if (types[i].type == temp) {
-			type = types[i].nameType;
-			break;
-		}
+void reduction(std::string &temp, short a) {
+	if (temp.size() > a) {
+		temp.resize(a - 3);
+		temp += "...";
 	}
-	return type;
+	else {
+		temp.resize(a, ' ');
+	}
+}
+
+void message(std::string mes1, std::string mes2, std::string mes3, std::string mes4) {
+	reduction(mes1, 30);
+	reduction(mes2, 5);
+	reduction(mes3, 9);
+	reduction(mes4, 11);
+	setColor(11, 0);
+	std::cout << '|';
+	setColor(14, 0);
+	std::cout << mes1;
+	setColor(11, 0);
+	std::cout << '|';
+	setColor(13, 0);
+	std::cout << mes2;
+	setColor(11, 0);
+	std::cout << '|';
+	setColor(12, 0);
+	std::cout << mes3;
+	setColor(11, 0);
+	std::cout << '|';
+	setColor(10, 0);
+	std::cout << mes4;
+	setColor(11, 0);
+	std::cout << '|';
+	std::cout << std::endl;
+}
+
+void messageUp() {
+	setColor(11, 0);
+	std::cout << '|';
+	setColor(14, 0);
+	std::cout << "Имя                           ";
+	setColor(11, 0);
+	std::cout << '|';
+	setColor(13, 0);
+	std::cout << "Тип  ";
+	setColor(11, 0);
+	std::cout << '|';
+	setColor(12, 0);
+	std::cout << "Размер   ";
+	setColor(11, 0);
+	std::cout << '|';
+	setColor(10, 0);
+	std::cout << "Перенесён в";
+	setColor(11, 0);
+	std::cout << '|';
+	std::cout << std::endl;
+	std::cout << "------------------------------------------------------------";
+	std::cout << std::endl;
 }
 
 int main()
 {
+	//имя >>    тип файла >>   размер >>       файл перенесён в >> 
 	setlocale(LC_ALL, "Russian");
-
-	std::vector<Types> types;
-	std::vector<std::string> typeNames;
-	if (reader("settings.txt", types, typeNames)) {
-		std::string path = R"(Z:\test)";
-		if (fs::exists(path)) {
-			for (int i = 0; i < typeNames.size(); i++)
+	//system("cls");//отчистить экран
+	SettingsSort settingSort;
+	if (!settingSort.reader("settings.txt")) {
+		setColor(12, 0);
+		std::cout << "Не существует файла настроек" << std::endl;
+	}
+	else {
+		std::string path;
+		//= R"(Z:\test)";
+		setColor(14, 0);
+		std::cout << "Введите адрес папки, которую нужно отсортировать >> ";
+		setColor(15, 0);
+		std::cin >> path;
+		if (!fs::exists(path)) {
+			setColor(12, 0);
+			std::cout << "Не существует" << std::endl << std::endl;
+		}
+		else {
+			Byte byte;
+			for (int i = 0; i < static_cast<int>(settingSort.typeNames.size()); i++)
 			{
-				fs::create_directory(path + "\\"+ typeNames[i]);
+				fs::create_directory(path + "\\"+ settingSort.typeNames[i]);
 			}
-			int size = 0;
+			int sizeAll = 0;
+			int size;
+			messageUp();
 			for (const auto &p : fs::directory_iterator(path)) {
 				fs::path a(p);
-				std::cout << "полное имя = " << a << std::endl;
-				std::cout << "имя = " << a.filename() << std::endl;
-				std::cout << "адресс = " << a.parent_path() << std::endl;
 				if (!fs::is_directory(p)) {
-					std::cout << "тип файла = " << a.extension() << std::endl;
-					std::string temp{ a.extension().u8string() };
+					std::string temp{ a.extension().string() };
 					try
 					{
-						int temp = fs::file_size(a);
-						size += temp;
-						std::cout << "размер = " << temp << " байт" << std::endl;
+						size = static_cast<int>(fs::file_size(a));
+						sizeAll += size;
 					}
 					catch (fs::filesystem_error& e)
 					{
 						std::cout << e.what() << std::endl;
 					}
-					temp = typeFind(types, temp);
+					temp = settingSort.typeFind(temp);
 					if (temp != "") {
 						fs::path b = a.parent_path();
 						b += "\\" + temp + "\\";
 						b += a.filename();
 						fs::rename(a, b);
-						std::cout << std::endl;
-						std::cout << "полное новое имя = " << a << std::endl;
-						std::cout << "новое имя = " << a.filename() << std::endl;
-						std::cout << "новое адресс = " << a.parent_path() << std::endl;
 					}
-				}
-			}
-			for (int i = 0; i < typeNames.size(); i++)
-			{
-				if (fs::is_empty(path + "\\" + typeNames[i])) {
-					fs::remove(path + "\\" + typeNames[i]);
+					message(a.filename().string(), a.extension().string(), byte.show(size), temp);
 				}
 			}
 			
-			std::cout << size << " байт" << std::endl;
-			std::cout << size / 1024. << " килобайт" << std::endl;
-			std::cout << size / 1024. / 1024. << " мегабайт" << std::endl;
-		}
-		else {
-			std::cout << "Не существует" << std::endl;
+			for (int i = 0; i < static_cast<int>(settingSort.typeNames.size()); i++)
+			{
+				if (fs::is_empty(path + "\\" + settingSort.typeNames[i])) {
+					fs::remove(path + "\\" + settingSort.typeNames[i]);
+				}
+			}
+			std::cout << std::endl << std::endl;
+			message("Итоговый вес файлов(кроме папок) >> ", byte.show(sizeAll));
 		}
 	}
-	else {
-		std::cout << "Не существует файла настроек" << std::endl;
-	}
-	
+	setColor(15, 0);
 	return 0;
 }
